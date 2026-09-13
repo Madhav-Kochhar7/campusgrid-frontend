@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusGrid - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* CSS Animations */
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up {
+      animation: fadeInUp 0.5s ease-out forwards;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md fade-in-up" style="animation-delay: 100ms;">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-blue-600 tracking-tight">CampusGrid</h1>
+      <p class="text-slate-500 mt-2 text-sm">Distributed computing for students.</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-6">Sign In</h2>
+      
+      <form action="index.html" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+          <input type="email" placeholder="student@university.edu" class="block w-full px-4 py-3 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors hover:bg-slate-50 focus:bg-white text-slate-900 placeholder-slate-400">
+        </div>
+        
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-semibold text-slate-700">Password</label>
+            <a href="#" class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Forgot password?</a>
+          </div>
+          <input type="password" placeholder="••••••••" class="block w-full px-4 py-3 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors hover:bg-slate-50 focus:bg-white text-slate-900 placeholder-slate-400">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 tracking-wide">
+            Sign In
+          </button>
+        </div>
+      </form>
+      
+      <div class="mt-6 text-center">
+        <p class="text-sm text-slate-500">Don't have an account? <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">Request Access</a></p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
