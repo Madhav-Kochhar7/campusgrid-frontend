@@ -1,0 +1,108 @@
+/**
+ * Global Design & Styling System
+ * =============================
+ * Configures the fundamental visual tokens for the CampusGrid dashboard.
+ * Extends Tailwind CSS with project-specific utilities for status indicators 
+ * and animations.
+ *
+ * Layers:
+ * - Base: Core resets and typography.
+ * - Components: Reusable pattern-level styles.
+ * - Utilities: Status badges, pulse effects, and custom scrollbars.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+  /* 
+   * Default body and typography settings.
+   * Applies the dark-themed glassmorphism tokens 
+   * defined in the Tailwind config.
+   */
+  body {
+    @apply bg-bg-page text-text-primary font-sans;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 
+   * High-Precision Scrollbar Control
+   * Optimized for thin, dark-mode interfaces to maintain a premium look.
+   */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300;
+  }
+}
+
+@layer utilities {
+
+  /**
+   * Semantic Status Utility Classes
+   * Minimalistic standardizations for Job/Node states.
+   */
+  .status-queued {
+    @apply bg-status-queuedBg text-status-queuedText border border-status-queuedText/20;
+  }
+
+  .status-dispatched {
+    @apply bg-status-dispatchedBg text-status-dispatchedText border border-status-dispatchedText/30;
+  }
+
+  .status-running {
+    @apply bg-status-runningBg text-status-runningText border border-status-runningText/30;
+  }
+
+  .status-done {
+    @apply bg-status-doneBg text-status-doneText border border-status-doneText/50;
+  }
+
+  .status-failed {
+    @apply bg-status-failedBg text-status-failedText border border-status-failedText/30 line-through decoration-status-failedText/50;
+  }
+
+  .status-expired {
+    @apply bg-status-expiredBg text-status-expiredText border border-status-expiredText/20 opacity-75;
+  }
+
+  /**
+   * Micro-interaction: Pulse Dot
+   * Used for 'Live' indicators on the dashboard and node monitoring.
+   */
+  .pulse-dot {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Keyframe Animations */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+}
