@@ -1,15 +1,3 @@
-/**
- * CampusGrid Design System Configuration
- * =====================================
- * Defines the persistent visual tokens (colors, typography, spacing) 
- * for the Tailwind CSS framework.
- * 
- * Theme Identity:
- * - Base: Deep Zinc/Neutral dark mode (#09090B).
- * - Accents: Minimalistic monochrome (white/zinc).
- * - Semantic: Grayscale status mapping.
- */
-
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -73,7 +61,6 @@ export default {
         }
       },
       fontFamily: {
-        // System fonts for a minimal aesthetic
         sans: ['"Inter"', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace'],
       },

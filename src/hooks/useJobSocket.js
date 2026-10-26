@@ -1,95 +1,80 @@
 /**
- * Real-time Job Monitoring Hook
- * =============================
- * Establishes a WebSocket connection to the backend to receive live updates 
- * for a specific job. 
- * 
- * Handled events:
- * - heartbeats: Used for live CPU/RAM charts.
- * - log_line: Consolidates stdout/stderr from the remote node.
- * - status_change: Invalidates React Query cache to refresh UI components.
- * - job_complete/failed: Finalizes the connection and triggers a final data refresh.
+ * Simulates high-frequency hardware metrics (CPU/RAM sparklines) 
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { getMockJob } from '../api/mockData.js'
 
 export function useJobSocket(jobId) {
-  const [liveData, setLiveData] = useState([])     // Data points for live resource charts
-  const [logs, setLogs] = useState([])             // Consolidated remote execution logs
+  const [liveData, setLiveData] = useState([])
+  const [logs, setLogs] = useState([])
   const [currentStats, setCurrentStats] = useState(null)
-  const [socketStatus, setSocketStatus] = useState('idle')
-  const ws = useRef(null)
-  const queryClient = useQueryClient()
+  const [socketStatus, setSocketStatus] = useState('connecting')
 
-  /**
-   * Initializes the WebSocket connection.
-   */
-  const connect = useCallback(() => {
-    if (!jobId) return
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
-    const url = `${wsUrl}/ws/jobs/${jobId}`
-
-    ws.current = new WebSocket(url)
-    setSocketStatus('connecting')
-
-    ws.current.onopen = () => setSocketStatus('connected')
-    ws.current.onclose = () => setSocketStatus('closed')
-    ws.current.onerror = () => setSocketStatus('error')
-
-    ws.current.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data)
-
-        // Remote node heartbeat: Update live charts and stats
-        if (msg.type === 'heartbeat') {
-          setCurrentStats(msg)
-          setLiveData((prev) => [
-            // Keep only the last 30 data points for the trend chart
-            ...prev.slice(-29),
-            { cpu: msg.cpu_used_pct, ram: msg.ram_used_mb, t: Date.now() },
-          ])
-        }
-
-        // New log line from the container
-        if (msg.type === 'log_line') {
-          // Cap log buffer at 1000 lines to prevent memory bloat
-          setLogs((prev) => [...prev.slice(-999), msg.line])
-        }
-
-        // Backend signaled a high-level status change
-        if (msg.type === 'status_change') {
-          // Invalidate job cache so UI components (JobDetails, JobTable) update immediately
-          queryClient.invalidateQueries({ queryKey: ['job', jobId] })
-          queryClient.invalidateQueries({ queryKey: ['jobs'] })
-        }
-
-        // Terminal states: Refresh cache and close the connection
-        if (msg.type === 'job_complete' || msg.type === 'job_failed') {
-          queryClient.invalidateQueries({ queryKey: ['job', jobId] })
-          queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          setSocketStatus('closed')
-          ws.current?.close()
-        }
-
-        // Incremental progress for split/sharded jobs
-        if (msg.type === 'chunk_done') {
-          // Refresh job detail to update chunk progress bar
-          queryClient.invalidateQueries({ queryKey: ['job', jobId] })
-        }
-      } catch (err) {
-        // Robustness: Ignore malformed JSON messages
-      }
-    }
-  }, [jobId, queryClient])
-
-  // Lifecycle: Connect on mount or when jobId changes; disconnect on unmount.
   useEffect(() => {
-    connect()
-    return () => {
-      ws.current?.close()
+    if (!jobId) {
+      setSocketStatus('idle')
+      return
     }
-  }, [connect])
+
+    const job = getMockJob(jobId)
+    const isRunning = job ? job.status === 'running' : false
+
+    // Initialize initial logs from job record
+    if (job && job.logs) {
+      setLogs([...job.logs])
+    }
+
+    // Initialize initial sparkline history
+    const initialPoints = Array.from({ length: 15 }).map((_, i) => ({
+      cpu: Math.floor(40 + Math.random() * 45),
+      ram: Math.floor(4000 + Math.random() * 2500),
+      t: Date.now() - (15 - i) * 2000,
+    }))
+    setLiveData(initialPoints)
+
+    // Mark as connected for live view
+    const connectTimer = setTimeout(() => {
+      setSocketStatus(isRunning ? 'connected' : 'closed')
+    }, 200)
+
+    // If job is running, simulate periodic telemetry and streaming stdout
+    let telemetryInterval = null
+    if (isRunning) {
+      let stepCounter = 1
+      telemetryInterval = setInterval(() => {
+        const cpuPct = Math.floor(55 + Math.sin(Date.now() / 3000) * 25 + Math.random() * 10)
+        const ramMb = Math.floor(5800 + Math.random() * 800)
+
+        setCurrentStats({
+          cpu_used_pct: cpuPct,
+          ram_used_mb: ramMb,
+        })
+
+        setLiveData((prev) => [
+          ...prev.slice(-24),
+          { cpu: cpuPct, ram: ramMb, t: Date.now() },
+        ])
+
+        // Add periodic stdout line
+        const now = new Date().toLocaleTimeString()
+        const dynamicLogs = [
+          `[STREAM ${now}] Batch #${4200 + stepCounter * 15} processed in 1.84s (Loss: ${(0.42 - (stepCounter * 0.005)).toFixed(4)})`,
+          `[TELEMETRY ${now}] Node health: OK | GPU Temp: ${62 + (stepCounter % 3)}°C | Fan: 64%`,
+          `[CHECKPOINT ${now}] Gradient synchronization verified with orchestrator master.`,
+        ]
+
+        const nextLog = dynamicLogs[(stepCounter - 1) % dynamicLogs.length]
+        setLogs((prev) => [...prev.slice(-150), nextLog])
+        stepCounter += 1
+      }, 3500)
+    }
+
+    return () => {
+      clearTimeout(connectTimer)
+      if (telemetryInterval) clearInterval(telemetryInterval)
+    }
+  }, [jobId])
 
   return { liveData, logs, currentStats, socketStatus }
 }

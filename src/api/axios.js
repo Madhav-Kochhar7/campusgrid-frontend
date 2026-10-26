@@ -1,31 +1,21 @@
 /**
- * Centralized API Client
- * ======================
- * Manages all outgoing HTTP traffic to the CampusGrid backend.
- * 
- * Features:
- * - Base URL configuration via environment variables.
- * - JWT Injection: Automatically attaches 'Authorization' headers to all requests.
- * - Global Error Handling: Intercepts 401 Unauthorized responses to trigger session cleanup.
+ * Frontend-Only API Client & Token Manager
+ * ========================================
+ * Simulates the centralized HTTP client interface without making 
+ * external network requests. Keeps state, token references, and 
+ * download blob compatibility intact.
  */
-
-import axios from 'axios'
-
-const api = axios.create({
-  // Use VITE_API_URL if defined, otherwise fallback to the production cloud endpoint (Render).
-  baseURL: import.meta.env.VITE_API_URL || 'https://campusgrid-api.onrender.com',
-})
 
 // Memory-persisted token reference
 let _token = null
 
 /**
- * Updates the internal Bearer token reference for subsequent requests.
+ * Updates the internal Bearer token reference.
  */
 export const setToken = (t) => { _token = t }
 
 /**
- * Retrieves the current session token if available.
+ * Retrieves the current session token.
  */
 export const getToken = () => _token
 
@@ -35,28 +25,25 @@ export const getToken = () => _token
 export const clearToken = () => { _token = null }
 
 /**
- * Request Interceptor:
- * Ensures every outgoing request includes the current JWT in the headers.
+ * Mock API client providing Axios-compatible methods for pure frontend operation.
  */
-api.interceptors.request.use((config) => {
-  if (_token) config.headers.Authorization = `Bearer ${_token}`
-  return config
-})
-
-/**
- * Response Interceptor:
- * Monitors for authentication failure (401). If the token has expired 
- * or been revoked, it clears the local state and redirects the user to login.
- */
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      clearToken()
-      window.location.href = '/login'
+const api = {
+  get: async (url, config = {}) => {
+    if (url.includes('/results')) {
+      const dummyData = new Blob([
+        `CAMPUSGRID WORKLOAD ARTIFACT\nTimestamp: ${new Date().toISOString()}\nStatus: SUCCESS\nPayload: [Simulation output completed]`
+      ], { type: 'text/plain' })
+      return { data: dummyData }
     }
-    return Promise.reject(err)
-  }
-)
+    return { data: {} }
+  },
+  post: async (url, data) => ({ data: {} }),
+  delete: async (url) => ({ data: { success: true } }),
+  put: async (url, data) => ({ data: {} }),
+  interceptors: {
+    request: { use: () => {} },
+    response: { use: () => {} },
+  },
+}
 
 export default api

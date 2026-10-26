@@ -17,17 +17,16 @@ import { useJob } from '../hooks/useJobs'
 import { useJobSocket } from '../hooks/useJobSocket'
 import { Card, Spinner, Button, Badge } from '../components/ui/index'
 import StatusBadge from '../components/ui/StatusBadge'
+import { downloadResults } from '../api/jobs'
+import { CpuSparkline, RamSparkline } from '../components/charts/index'
 import api from '../api/axios'
 import { motion } from 'framer-motion'
 
-/**
- * Terminal-style component for streaming application logs.
- * Includes auto-scrolling to the latest output.
- */
+
 function LiveLogs({ logs }) {
   const bottomRef = React.useRef(null)
 
-  // Auto-scroll logic: whenever new logs arrive, scroll the viewport to the bottom.
+  // Auto-scroll logic
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
@@ -45,7 +44,6 @@ function LiveLogs({ logs }) {
     <div className="h-96 bg-white border-t border-slate-200 overflow-y-auto p-6 font-mono text-[13px] text-slate-700 leading-relaxed scroll-smooth shadow-inner custom-scrollbar relative">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
       {logs.map((log, i) => {
-        // Simple heuristic for highlighting log severity
         const isError = log.includes('ERROR') || log.includes('Exception')
         const isWarning = log.includes('WARN')
         return (
@@ -135,21 +133,15 @@ export default function JobDetailPage() {
   // Static job data from the relational database
   const { data: job, isLoading, error } = useJob(id)
   
-  // Dynamic streaming data from the WebSocket worker
-  const { logs: socketLogs, socketStatus } = useJobSocket(id)
+  // Dynamic streaming data from the telemetry hook (powered by Recharts)
+  const { liveData, logs: socketLogs, currentStats, socketStatus } = useJobSocket(id)
 
   /**
-   * Fetches results as a binary blob and triggers a browser-level download.
+   * Fetches results and triggers a client-side artifact download.
    */
   const handleDownload = async () => {
     try {
-      const res = await api.get(`/jobs/${id}/results`, { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `results_${id.slice(0, 8)}.zip`
-      a.click()
-      window.URL.revokeObjectURL(url)
+      await downloadResults(id)
     } catch {
       alert('Results not available yet.')
     }
@@ -229,6 +221,22 @@ export default function JobDetailPage() {
         <StatItem icon={HardDrive} label="RAM Quota" value={job.memory.toUpperCase()} />
         <StatItem icon={Clock} label="TTL Limit" value={`${job.timeout_seconds}s`} />
         <StatItem icon={TerminalSquare} label="Shard Node" value={job.node_id?.toUpperCase().slice(0, 8) || 'ORCHESTRATING...'} />
+      </div>
+
+      {/* Live Telemetry Trend Cards (Recharts) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
+        >
+          <CpuSparkline data={liveData} currentValue={currentStats?.cpu_used_pct ?? liveData[liveData.length - 1]?.cpu} />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
+        >
+          <RamSparkline data={liveData} currentValue={currentStats?.ram_used_mb ?? liveData[liveData.length - 1]?.ram} />
+        </motion.div>
       </div>
 
       {/* Logs Terminal Overlay */}
